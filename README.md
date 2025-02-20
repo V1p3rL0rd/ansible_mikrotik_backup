@@ -1,4 +1,4 @@
-This playbook is a simple script for automating backups on Mikrotik routers.
+This simple Ansible playbook automates the process of creating backups of Mikrotik routers.
 
 The script is executed in several stages:
 
