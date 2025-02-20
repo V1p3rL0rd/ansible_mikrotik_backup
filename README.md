@@ -1,4 +1,4 @@
-This playbook offers a simple scenario for automating the creation of backups on Mikrotik routers.
+This playbook is a simple script for automating backups on Mikrotik routers.
 
 The script is executed in several stages:
 
