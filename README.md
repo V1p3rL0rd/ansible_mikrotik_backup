@@ -7,6 +7,6 @@ The script is executed in several stages:
 2) Get device identity
 3) Extract device identity
 4) Create backup on Mikrotik device
-5) Fetch backup file from Mikrotik device to local directory "~/.backups"
+5) Fetch backup file from Mikrotik device to local directory "./backups"
 6) Debug backup creation status
 7) Debug backup fetch status
