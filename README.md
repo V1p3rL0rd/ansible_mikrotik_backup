@@ -1,7 +1,7 @@
 # Ansible mikrotik router backup
 This is very simple Ansible playbook will help you automates the process of creating backups of Mikrotik routers.
 
-The playbook contains a several tasks:
+The playbook contains several tasks:
 
 1) Ensure local backup directory exists
 2) Get device identity
