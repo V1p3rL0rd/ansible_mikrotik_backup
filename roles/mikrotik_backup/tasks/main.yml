@@ -1,0 +1,30 @@
+---
+- name: Ensure local backup directory exists
+  local_action:
+    module: file
+    path: "{{ backup_dir }}"
+    state: directory
+
+- name: Get device identity
+  local_action: command sshpass -p '{{ ansible_password }}' ssh -o StrictHostKeyChecking=no {{ ansible_user }}@{{ inventory_hostname }} "/system identity print"
+  register: identity_output
+
+- name: Extract device identity
+  set_fact:
+    device_identity: "{{ identity_output.stdout_lines[0] | regex_replace('name: ', '') | trim }}"
+
+- name: Create backup on Mikrotik device
+  local_action: command sshpass -p '{{ ansible_password }}' ssh -o StrictHostKeyChecking=no {{ ansible_user }}@{{ inventory_hostname }} "/system backup save name={{ device_identity }}_{{ lookup('pipe', 'date +%Y-%m-%d') }}"
+  register: backup_output
+
+- name: Fetch backup file from Mikrotik device
+  local_action: command sshpass -p '{{ ansible_password }}' scp -o StrictHostKeyChecking=no {{ ansible_user }}@{{ inventory_hostname }}:/{{ device_identity }}_{{ lookup('pipe', 'date +%Y-%m-%d') }}.backup {{ backup_dir }}/{{ device_identity }}_{{ lookup('pipe', 'date +%Y-%m-%d') }}.backup
+  register: fetch_output
+
+- name: Debug backup creation status
+  debug:
+    msg: "{{ inventory_hostname }} backup creation: {{ 'succeeded' if backup_output.rc == 0 else 'failed' }}"
+
+- name: Debug backup fetch status
+  debug:
+    msg: "{{ inventory_hostname }} backup fetch: {{ 'succeeded' if fetch_output.rc == 0 else 'failed' }}" 
