@@ -39,4 +39,8 @@ It is recommended to store passwords in encrypted form using Ansible Vault:
 
 ```bash
 ansible-vault encrypt group_vars/mikrotik/vars.yml
-``` 
+```
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
