@@ -1,0 +1,68 @@
+---
+- hosts: mikrotik
+  gather_facts: no
+  tasks:
+
+    - name: Ensure backup directory exists
+      ansible.builtin.file:
+        path: "backups"
+        state: directory
+        mode: '0755'
+      delegate_to: localhost
+
+    - name: Set ssh port (default to 22 if not defined)
+      set_fact:
+        ansible_port: "{{ ansible_port | default(22) }}"
+
+    - name: Get current timestamp
+      ansible.builtin.command: date "+%Y-%m-%d_%H-%M-%S"
+      register: current_time
+      delegate_to: localhost
+      changed_when: false
+
+    - name: Get router identity
+      ansible.builtin.shell: >-
+        {% if ansible_ssh_pass is defined %}
+        sshpass -p '{{ ansible_ssh_pass }}' ssh -o StrictHostKeyChecking=no {{ ansible_user }}@{{ inventory_hostname }} -p {{ ansible_port }} /system identity print
+        {% else %}
+        ssh -o StrictHostKeyChecking=no {{ ansible_user }}@{{ inventory_hostname }} -p {{ ansible_port }} /system identity print
+        {% endif %}
+      register: router_identity
+      delegate_to: localhost
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Process router identity
+      set_fact:
+        router_name: >-
+          {% if router_identity.stdout is defined and 'name:' in router_identity.stdout %}
+            {{ router_identity.stdout | regex_search('name:.*') | regex_replace('name:\\s*', '') | trim | regex_replace('[^a-zA-Z0-9-]', '_') }}
+          {% else %}
+            {{ inventory_hostname | regex_replace('[^a-zA-Z0-9-]', '_') }}
+          {% endif %}
+
+    - name: Perform router backup
+      ansible.builtin.shell: >-
+        {% if ansible_ssh_pass is defined %}
+        sshpass -p '{{ ansible_ssh_pass }}' ssh -o StrictHostKeyChecking=no {{ ansible_user }}@{{ inventory_hostname }} -p {{ ansible_port }} /export
+        {% else %}
+        ssh -o StrictHostKeyChecking=no {{ ansible_user }}@{{ inventory_hostname }} -p {{ ansible_port }} /export
+        {% endif %}
+      register: export
+      delegate_to: localhost
+
+    - name: Debug variables for verification
+      ansible.builtin.debug:
+        msg: >
+          Will save backup as: backups/{{ router_name }}_{{ current_time.stdout }}.rsc
+          Router name: {{ router_name }}
+          Timestamp: {{ current_time.stdout }}
+          Export content length: {{ export.stdout | length }} chars
+
+    - name: Save backup to file
+      ansible.builtin.copy:
+        content: "{{ export.stdout }}"
+        dest: "backups/{{ router_name }}_{{ current_time.stdout }}.rsc"
+      delegate_to: localhost
+      when: export.stdout is defined
+      
